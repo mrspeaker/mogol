@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style type="text/css">
+            body {
+                font-family: monospace;
+                background-color: #0A0A0A;
+                color: #9DCE5C;
+            }
+            input, button {
+                font-family: monospace;
+                background-color: #0A0A0A;
+                color: #9DCE5C;
+                border: 1px solid #9DCE5C;
+            }
+            button {
+                border-radius: 3px;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="board" width="300" height="300"></canvas>
+        <div>
+            <button onclick="theproc=process2;">proc2</button>
+            <button onclick="theproc=process4;">proc4</button>
+            <button onclick="theproc=process5;">proc5</button>
+            <button onclick="theproc=process3;">blinker</button>
+            <input type="text" onblur="speed=this.value" style="width:40px" value="30" />
+        </div>
+        <div style="font-size:8pt;margin-top: 30px">
+            Just messing with some (accidental) variations on GoL.
+        </div>
+        <script type="text/javascript" charset="utf-8">
+            var world = [],
+                size = 50,
+                ctx = document.getElementById("board").getContext("2d"),
+                cellSize = ~~(ctx.canvas.width / size),
+                colours = [
+                    "#444041", "rgb(20,0,0)", "rgb(40,0,0)", "rgb(60,0,0)", "rgb(80,0,0)", 
+                    "rgb(100,0,0)", "rgb(120,0,0)", "rgb(140,0,0)", "rgb(160,0,0)", "#79B837"
+                ],
+                speed = 30;
+
+            function each(cb) {
+                var rows = [],
+                    cols;
+                for (var y = 0; y < size; ++y) {
+                    rows.push(cols = []); 
+                    for(var x = 0; x < size; ++x) {
+                        cols.push(cb({x:x, y:y}));
+                    }
+                }
+                return rows;
+            }
+
+            function draw(cell) {
+                ctx.fillStyle = cell.count ? colours[9] : colours[0];
+                ctx.fillRect(
+                    cell.y * cellSize,
+                    cell.x * cellSize,
+                    cellSize - 1,
+                    cellSize - 1);
+            }
+
+            function process5(cell) {
+                var alive = count(cell),
+                    newCount = 0;
+
+                if(cell.count || alive === 3) {
+                    newCount = alive >= 1 && alive <= 4;
+                }
+                return {
+                    x: cell.x, y: cell.y, count: newCount};
+            }
+
+            
+            function process4(cell) {
+                var alive = count(cell),
+                    newCount = 0;
+
+                if(cell.count || alive === 3) {
+                    newCount = alive >= 1 && alive < 4;
+                }
+                return {
+                    x: cell.x, y: cell.y, count: newCount};
+            }
+
+            // CRazy strobe
+            function process3(cell) {
+                var alive = count(cell),
+                    newCount = alive;
+
+                if(cell.count || alive === 3) {
+                    newCount = alive > 1 && alive < 4;
+                }
+                return {
+                    x: cell.x, y: cell.y, count: newCount};
+            }
+
+            // wavey map walls
+            function process2(cell) {
+                var alive = count(cell);
+
+                if(cell.count || alive === 3) {
+                    cell.count = alive > 1 && alive < 4;
+                }
+                return cell;
+            }
+
+            function count(cell) {
+                var res = 0,
+                    isAlive = function(x, y) {
+                        if(cell.x + x >= 0 &&
+                            cell.x + x < size &&
+                            cell.y + y >= 0 &&
+                            cell.y + y < size) {
+                            return (world[cell.y + y][cell.x + x]).count;
+                        }
+                        return false;
+                    };
+
+                for(var y = -1; y <=1; y++) {
+                    for(var x = -1; x <=1; x++) {
+                        res += isAlive(x,y) ? 1 : 0;
+                    }
+                }
+                return res;
+            }
+
+            // Init
+            world = each(function(cell){
+                cell.count = Math.random() < 0.5;
+                return cell;
+            });
+
+            var theproc = process2;
+            // Run
+            (function loop() {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);                
+                world = each(function(cell){
+                    var cell = world[cell.y][cell.x];
+                    draw(cell);
+                    return theproc(cell);
+                });
+                setTimeout(loop, speed);
+            }());
+
+        </script>
+    </body>
+</html>
